@@ -1,3 +1,5 @@
+extern crate time;
+
 use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
@@ -69,6 +71,17 @@ pub fn is_hamming_close(v1: i32, v2: i32) -> bool {
     true
 }
 
+pub fn is_hamming_close2(v1: &Vec<bool>, v2: &Vec<bool>) -> bool {
+    let mut dist = 0;
+    for i in 0..v1.len() {
+        if (v1[i] == true && v2[i] == false) || (v1[i] == false && v2[i] == true) {
+            dist += 1;
+            if dist > 2 { return false }
+        }
+    }
+    true
+}
+
 pub fn get_hamming_distance2(v1: &Vec<bool>, v2: &Vec<bool>) -> i32 {
     let mut dist = 0;
     for i in 0..v1.len() {
@@ -79,18 +92,14 @@ pub fn get_hamming_distance2(v1: &Vec<bool>, v2: &Vec<bool>) -> i32 {
     dist
 }
 
+//6118
 pub fn cluster(graph: &Vec<i32>) -> usize {
     let mut uf = create(graph.len());
     for j in 0..graph.len() {
-//        println!("{}", j);
         for k in j..graph.len() {
-            //if get_hamming_distance(graph[j], graph[k]) < 23  {
             if is_hamming_close(graph[j], graph[k]) {
                 union(&mut uf, j, k);
             }
-//             else {
-//                 println!("{} {} {} not close", graph[j], graph[k], get_hamming_distance(graph[j], graph[k]))
-//             }
         }
     }
     get_num_clusters(&uf)
@@ -98,15 +107,10 @@ pub fn cluster(graph: &Vec<i32>) -> usize {
 
 pub fn cluster2(graph: &Vec<Vec<bool>>) -> usize {
     let mut uf = create(graph.len());
-    for i in 0..23 {
-        println!("{}", i);
-        for j in 0..graph.len() {
-
-        println!("{}", j);
-            for k in 0..graph.len() {
-                if get_hamming_distance2(&graph[j], &graph[k]) == i  {
-                   union(&mut uf, j, k)
-                }
+    for j in 0..graph.len() {
+        for k in j..graph.len() {
+            if is_hamming_close2(&graph[j], &graph[k]) {
+                union(&mut uf, j, k)
             }
         }
     }
@@ -119,9 +123,13 @@ pub fn get_num_clusters(union_find: &Vec<Component>) -> usize {
 }
 
 fn main() {
-    println!("hello world");
-    let graph = load("clustering.txt");
+    let graph = load("clustering_small.txt");
+    let graph2 = load2("clustering_small.txt");
+    let clustering_start_time = time::precise_time_ns();
     println!("{}", cluster(&graph));
+    println!("Time to run clustering: {} ms", // 140s
+        (time::precise_time_ns() - clustering_start_time) / 1_000_000);
+
 }
 
 #[derive(PartialEq, Eq, Debug)]
