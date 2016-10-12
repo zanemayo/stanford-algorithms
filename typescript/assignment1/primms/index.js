@@ -1,5 +1,5 @@
 // import fs from 'fs'
-const fs = require('fs')
+var fs = require('fs')
 var splitLine = function (line) { return line.split(' ').map(function (n) { return +n; }); };
 function loadGraph(filename) {
     var lines = fs.readFileSync(filename, 'UTF-8').split('\n')
@@ -51,17 +51,17 @@ function testPrimms() {
 function perf() {
     
     //printTime(function () { return loadGraph('edges2.txt'); }); // 4ms
-    const graph = loadGraph('edges10.txt')
+    var graph = loadGraph('edges.txt')
     printTime(function () { return getPrimmsCost(graph); }); // 39ms // 20ms with swapped
 }
 function printTime(fn) {
     var start = new Date().getTime();
-    console.time("aaa");
+    console.time("real time");
     var starthr = process.hrtime();
-    // for(let i = 0; i < 100; i++) 
+    // for(var i = 0; i < 100; i++) 
       fn();
     var elapsed = process.hrtime(starthr)[1] / 1000000;
-    console.timeEnd("aaa");
+    console.timeEnd("real time");
     var end = new Date().getTime();
     console.log('hr time: ' + elapsed + 'ms');
     console.log('Time taken: ' + (end - start) + 'ms');
@@ -87,13 +87,13 @@ function printTime(fn) {
 //   4---------3
 //        1
 // function loadGraph (filename) {
-//   const lines = fs.readFileSync(filename, 'UTF-8').split('\n')
-//   // const numVertices =  lines[0].split(' ')[0]
-//   const numEdges = lines[0].split(' ')[1]
+//   var lines = fs.readFileSync(filename, 'UTF-8').split('\n')
+//   // var numVertices =  lines[0].split(' ')[0]
+//   var numEdges = lines[0].split(' ')[1]
 //
-//   const graph = {}
-//   for (let i = 1; i <= numEdges; i++) {
-//     const [v1, v2] = lines[i].split(' ')
+//   var graph = {}
+//   for (var i = 1; i <= numEdges; i++) {
+//     var [v1, v2] = lines[i].split(' ')
 //     if (!graph[+v1]) graph[+v1] = []
 //     graph[+v1].push(+v2)
 //   }
@@ -101,10 +101,10 @@ function printTime(fn) {
 // }
 //
 // function testLoadGraph () {
-//   const graph = loadGraph('test.txt')
+//   var graph = loadGraph('test.txt')
 //   equal(4, numVertices(graph))
 //   equal(3, graph[2][0])
 //   equal(4, graph[2][1])
 // }
 //
-// const numVertices = graph => Object.keys(graph).length
+// var numVertices = graph => Object.keys(graph).length

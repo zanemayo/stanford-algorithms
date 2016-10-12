@@ -4,8 +4,8 @@ import * as fs from 'fs'
 
 module UnionFind {
   interface UF { 
-    components: Array<number>,
-    sizes: Array<number>
+    components: number[],
+    sizes: number[]
   }
 
   export function create (v: number) {
@@ -69,7 +69,7 @@ function equals (expected, actual) {
 
 // edges10 = 175ms
 // edges2 = 6ms
-const graph = loadGraph('edges2.txt')
+const graph = loadGraph('q3-10k.txt')
 // console.log('graph', graph)
 console.time('min spanning tree')
 const cost = calculateKruskelsCost(graph)

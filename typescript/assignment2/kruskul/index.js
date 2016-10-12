@@ -16,13 +16,14 @@ var UnionFind;
         return cc.components[v];
     }; };
     UnionFind.union = function (cc) { return function (v1, v2) {
-        var _a = cc.sizes[cc.components[v1]] > cc.sizes[cc.components[v2]]
-            ? [cc.components[v2], cc.components[v1]]
-            : [cc.components[v1], cc.components[v2]], renameFrom = _a[0], renameTo = _a[1];
-        cc.sizes[cc.components[renameTo]] += cc.sizes[cc.components[renameFrom]];
+        //     const [renameFrom, renameTo] = 
+        //       cc.sizes[cc.components[v1]] > cc.sizes[cc.components[v2]] 
+        //         ? [cc.components[v2], cc.components[v1]] 
+        //         : [cc.components[v1], cc.components[v2]]
+        //     cc.sizes[cc.components[renameTo]] += cc.sizes[cc.components[renameFrom]]
         for (var i = 0; i < cc.components.length; i++) {
-            if (cc.components[i] === renameFrom)
-                cc.components[i] = renameTo;
+            if (cc.components[i] === v1)
+                cc.components[i] = v2;
         }
     }; };
 })(UnionFind || (UnionFind = {}));
@@ -41,12 +42,15 @@ function calculateKruskelsCost(graph) {
     graph.edges.sort(function (a, b) { return a.w - b.w; });
     var _a = UnionFind.create(graph.v), ufFind = _a.ufFind, ufUnion = _a.ufUnion;
     var cost = 0;
+    var size = graph.v;
     for (var i = 0; i < graph.e; i++) {
         var edge = graph.edges[i];
         if (ufFind(edge.v1) === ufFind(edge.v2))
             continue;
         ufUnion(edge.v1, edge.v2);
         cost += edge.w;
+        if (!--size)
+            break;
     }
     return cost;
 }
@@ -57,7 +61,7 @@ function equals(expected, actual) {
 }
 // edges10 = 175ms
 // edges2 = 6ms
-var graph = loadGraph('edges2.txt');
+var graph = loadGraph('q3-10k.txt');
 // console.log('graph', graph)
 console.time('min spanning tree');
 var cost = calculateKruskelsCost(graph);
