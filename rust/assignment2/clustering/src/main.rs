@@ -10,30 +10,8 @@ fn to_usize(s: String) -> usize {
     s.trim().parse::<usize>().expect("Not a usize")
 }
 
-// pub struct Graph {
-//     v: usize,
-//     nodes: Vec<Vec<bool>>,
-// }
-// 
-// impl Graph {
-
 fn to_bool(bool_str: &str) -> bool {
     if bool_str == "1" { true } else { false }
-}
-
-pub fn load2(filename: &str) -> Vec<Vec<bool>> {
-    let f = File::open(filename).expect("Can't open file");
-    let mut reader = BufReader::new(f);
-    let mut top_line = String::new();
-    reader.read_line(&mut top_line).unwrap();
-    let v = to_usize(top_line);
-
-    reader.lines()
-        .map(|line|
-             line.unwrap().split(" ")
-             .map(|b| to_bool(&b))
-             .collect())
-        .collect()
 }
 
 pub fn load(filename: &str) -> Vec<i32> {
@@ -49,17 +27,6 @@ pub fn load(filename: &str) -> Vec<i32> {
         .collect()
 }
 
-
-pub fn get_hamming_distance(v1: i32, v2: i32) -> i32 {
-    let mut xor = v1 ^ v2;
-    let mut count = 0;
-    while xor > 0 {
-        count += 1;
-        xor = xor & (xor - 1)
-    }
-    count
-}
-
 pub fn is_hamming_close(v1: i32, v2: i32) -> bool {
     let mut xor = v1 ^ v2;
     let mut count = 0;
@@ -71,65 +38,34 @@ pub fn is_hamming_close(v1: i32, v2: i32) -> bool {
     true
 }
 
-pub fn is_hamming_close2(v1: &Vec<bool>, v2: &Vec<bool>) -> bool {
-    let mut dist = 0;
-    for i in 0..v1.len() {
-        if (v1[i] == true && v2[i] == false) || (v1[i] == false && v2[i] == true) {
-            dist += 1;
-            if dist > 2 { return false }
-        }
-    }
-    true
-}
-
-pub fn get_hamming_distance2(v1: &Vec<bool>, v2: &Vec<bool>) -> i32 {
-    let mut dist = 0;
-    for i in 0..v1.len() {
-        if (v1[i] == true && v2[i] == false) || (v1[i] == false && v2[i] == true) {
-            dist += 1;
-        }
-    }
-    dist
-}
-
-//6118
 pub fn cluster(graph: &Vec<i32>) -> usize {
     let mut uf = create(graph.len());
     for j in 0..graph.len() {
-        for k in j..graph.len() {
+        for k in j+1..graph.len() {
             if is_hamming_close(graph[j], graph[k]) {
                 union(&mut uf, j, k);
             }
         }
     }
-    get_num_clusters(&uf)
+    get_num_clusters(&mut uf)
 }
 
-pub fn cluster2(graph: &Vec<Vec<bool>>) -> usize {
-    let mut uf = create(graph.len());
-    for j in 0..graph.len() {
-        for k in j..graph.len() {
-            if is_hamming_close2(&graph[j], &graph[k]) {
-                union(&mut uf, j, k)
-            }
-        }
-    }
-    get_num_clusters(&uf)
-}
-
-pub fn get_num_clusters(union_find: &Vec<Component>) -> usize {
-    union_find.iter().map(|component| component.parent)
+pub fn get_num_clusters(mut union_find: &mut Vec<Component>) -> usize {
+    let uf_vec = union_find.iter()
+        .map(|component| component.parent)
+        .collect::<Vec<_>>();
+    uf_vec.iter()
+        .map(|v| find(&mut union_find, *v))
         .collect::<HashSet<usize>>().len()
 }
 
 fn main() {
-    let graph = load("clustering_small.txt");
-    let graph2 = load2("clustering_small.txt");
+    let graph = load("clustering.txt");
     let clustering_start_time = time::precise_time_ns();
     println!("{}", cluster(&graph));
     println!("Time to run clustering: {} ms", // 140s
         (time::precise_time_ns() - clustering_start_time) / 1_000_000);
-
+    //6118
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -144,20 +80,30 @@ pub fn create(size: usize) -> Vec<Component> {
         .collect()
 }
 
-pub fn union(uf: &mut Vec<Component>, v1: usize, v2: usize) {
-   let (rename_from, rename_to) = if uf[v1].rank > uf[v2].rank { (uf[v2].parent, uf[v1].parent) } else { (uf[v1].parent, uf[v2].parent) };
-   if rename_from == rename_to { return; }
-   let new_rank = uf[rename_to].rank + if uf[rename_from].rank == uf[rename_to].rank { 1 } else { 0 };
-   for v in 0..uf.len() {
-       if uf[v].parent == rename_from { uf[v].parent = rename_to; uf[v].rank = new_rank  }
-       if uf[v].parent == rename_to { uf[v].rank = new_rank }
-   }
+pub fn union(mut uf: &mut Vec<Component>, v1: usize, v2: usize) {
+    let v1Parent = find(&mut uf, v1);
+    let v2Parent = find(&mut uf, v2);
+    if v1Parent == v2Parent { return }
+
+    if uf[v1Parent].rank > uf[v2Parent].rank {
+        uf[v2Parent].parent = uf[v1Parent].parent;
+    }
+    else if uf[v1Parent].rank < uf[v2Parent].rank {
+        uf[v1Parent].parent = uf[v2Parent].parent;
+    }
+    else {
+        uf[v2Parent].parent = uf[v1Parent].parent;
+        uf[v1Parent].rank += 1;
+    }
 }
 
-pub fn find(uf: &Vec<Component>, v: usize) -> usize {
+pub fn find(mut uf: &mut Vec<Component>, v: usize) -> usize {
+    let parent = uf[v].parent;
+    if parent != v {
+        uf[v].parent = find(&mut uf, parent)
+    }
     uf[v].parent
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -229,7 +175,7 @@ mod tests {
     fn union_find_find() {
         let mut uf = create(3);
         union(&mut uf, 1, 2);
-        assert_eq!(2, find(&uf, 1));
+        assert_eq!(2, find(&mut uf, 1));
     }
 }
 
