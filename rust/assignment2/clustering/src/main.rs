@@ -3,28 +3,47 @@ extern crate time;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
-use std::fmt;
 use std::collections::HashSet;
 
-fn to_usize(s: String) -> usize {
-    s.trim().parse::<usize>().expect("Not a usize")
-}
+// fn to_usize(s: String) -> usize {
+//     s.trim().parse::<usize>().expect("Not a usize")
+// }
 
-fn to_bool(bool_str: &str) -> bool {
-    if bool_str == "1" { true } else { false }
-}
+// fn to_bool(bool_str: &str) -> bool {
+//     if bool_str == "1" { true } else { false }
+// }
 
 pub fn load(filename: &str) -> Vec<i32> {
     let f = File::open(filename).expect("Can't open file");
     let mut reader = BufReader::new(f);
     let mut top_line = String::new();
     reader.read_line(&mut top_line).unwrap();
-    let v = to_usize(top_line);
+//    let v = to_usize(top_line);
 
     reader.lines()
         .map(|line|
              i32::from_str_radix(&line.unwrap().replace(" ", ""), 2).unwrap())
         .collect()
+}
+
+pub fn load2(filename: &str) -> (Vec<i32>, Vec<Vec<Vec<usize>>>) {
+    let f = File::open(filename).expect("Can't open file");
+    let mut reader = BufReader::new(f);
+    let mut top_line = String::new();
+    reader.read_line(&mut top_line).unwrap();
+
+    let nodes = reader.lines()
+        .map(|line|
+             i32::from_str_radix(&line.unwrap().replace(" ", ""), 2).unwrap())
+        .collect::<Vec<i32>>();
+
+    let mut parts = vec![vec![vec![0; 0]; 256], vec![vec![0; 0]; 256], vec![vec![0; 0]; 256]];
+    for (i, node) in nodes.iter().enumerate() {
+        parts[0][(node >> 16) as usize].push(i);
+        parts[1][((node >> 8) as u8) as usize].push(i);
+        parts[2][(*node as u8) as usize].push(i);
+    }
+    (nodes, parts)
 }
 
 pub fn is_hamming_close(v1: i32, v2: i32) -> bool {
@@ -36,6 +55,23 @@ pub fn is_hamming_close(v1: i32, v2: i32) -> bool {
         xor = xor & (xor - 1)
     }
     true
+}
+
+pub fn cluster2(graph: &Vec<i32>, parts: &Vec<Vec<Vec<usize>>>) -> usize {
+    let mut uf = create(graph.len());
+    for g in 0..parts.len() {
+        let part = &parts[g];
+        for h in 0..256 {
+            for j in 0..part[h].len() {
+                for k in j+1..part[h].len() {
+                    if is_hamming_close(graph[part[h][j]], graph[part[h][k]]) {
+                        union(&mut uf, part[h][j], part[h][k]);
+                    }
+                }
+            }
+        }
+    }
+    get_num_clusters(&mut uf)
 }
 
 pub fn cluster(graph: &Vec<i32>) -> usize {
@@ -60,11 +96,17 @@ pub fn get_num_clusters(mut union_find: &mut Vec<Component>) -> usize {
 }
 
 fn main() {
-    let graph = load("clustering.txt");
     let clustering_start_time = time::precise_time_ns();
-    println!("{}", cluster(&graph));
+    let (graph, parts) = load2("clustering.txt");
+    println!("Number of clusters: {}", cluster2(&graph, &parts));
     println!("Time to run clustering: {} ms", // 140s
         (time::precise_time_ns() - clustering_start_time) / 1_000_000);
+
+//     let graph = load("clustering.txt");
+//     let clustering_start_time = time::precise_time_ns();
+//     println!("{}", cluster(&graph));
+//     println!("Time to run clustering: {} ms", // 140s
+//         (time::precise_time_ns() - clustering_start_time) / 1_000_000);
     //6118
 }
 
@@ -81,19 +123,19 @@ pub fn create(size: usize) -> Vec<Component> {
 }
 
 pub fn union(mut uf: &mut Vec<Component>, v1: usize, v2: usize) {
-    let v1Parent = find(&mut uf, v1);
-    let v2Parent = find(&mut uf, v2);
-    if v1Parent == v2Parent { return }
+    let v1_parent = find(&mut uf, v1);
+    let v2_parent = find(&mut uf, v2);
+    if v1_parent == v2_parent { return }
 
-    if uf[v1Parent].rank > uf[v2Parent].rank {
-        uf[v2Parent].parent = uf[v1Parent].parent;
+    if uf[v1_parent].rank > uf[v2_parent].rank {
+        uf[v2_parent].parent = uf[v1_parent].parent;
     }
-    else if uf[v1Parent].rank < uf[v2Parent].rank {
-        uf[v1Parent].parent = uf[v2Parent].parent;
+    else if uf[v1_parent].rank < uf[v2_parent].rank {
+        uf[v1_parent].parent = uf[v2_parent].parent;
     }
     else {
-        uf[v2Parent].parent = uf[v1Parent].parent;
-        uf[v1Parent].rank += 1;
+        uf[v2_parent].parent = uf[v1_parent].parent;
+        uf[v1_parent].rank += 1;
     }
 }
 
@@ -117,7 +159,35 @@ mod tests {
     }
 
     fn get_test_graph() -> Vec<i32>{
-        vec!(1,2,3)
+        vec!(11_184_810, 986_895, 9_375_503)
+    }
+
+    fn get_test_graph_with_arrays() -> (Vec<i32>, Vec<Vec<usize>>, Vec<Vec<usize>>, Vec<Vec<usize>>){
+//         let mut top = vec![vec![0; 0]; 256];
+//         top[170].push(11_184_810);
+//         top[15].push(986_895);
+//         top[143].push(9_375_503);
+//         let mut middle = vec![vec![0; 0]; 256];
+//         middle[170].push(11_184_810);
+//         middle[15].push(986_895);
+//         middle[15].push(9_375_503);
+//         let mut lower = vec![vec![0; 0]; 256];
+//         lower[170].push(11_184_810);
+//         lower[15].push(986_895);
+//         lower[15].push(9_375_503);
+        let mut top = vec![vec![0; 0]; 256];
+        top[170].push(0);
+        top[15].push(1);
+        top[143].push(2);
+        let mut middle = vec![vec![0; 0]; 256];
+        middle[170].push(0);
+        middle[15].push(1);
+        middle[15].push(2);
+        let mut lower = vec![vec![0; 0]; 256];
+        lower[170].push(0);
+        lower[15].push(1);
+        lower[15].push(2);
+        (get_test_graph(), top, middle, lower)
     }
 
     #[test]
@@ -127,14 +197,26 @@ mod tests {
     }
 
     #[test]
-    fn hamming_distance() {
-        let graph = load("test.txt");
-        assert_eq!(12, get_hamming_distance(graph[0], graph[1]));
-        assert_eq!(0, get_hamming_distance(14734287, 14734287));
-        assert_eq!(true, is_hamming_close(14734287, 14734287));
-        
-
+    fn graph_loads_into_hashmap() {
+        let (graph, top, middle, lower) = load2("test.txt");
+        let (graph_expected, top_expected, middle_expected, lower_expected) = get_test_graph_with_arrays();
+        assert_eq!(graph_expected, graph);
+        assert_eq!(top_expected[170], top[170]);
+        assert_eq!(top_expected[15], top[15]);
+        assert_eq!(top_expected[143], top[143]);
+        assert_eq!(middle_expected[170], middle[170]);
+        assert_eq!(middle_expected[15], middle[15]);
+        assert_eq!(lower_expected[170], lower[170]);
+        assert_eq!(lower_expected[15], lower[15]);
     }
+
+//     #[test]
+//     fn hamming_distance() {
+//         let graph = load("test.txt");
+//         assert_eq!(12, get_hamming_distance(graph[0], graph[1]));
+//         assert_eq!(0, get_hamming_distance(14734287, 14734287));
+//         assert_eq!(true, is_hamming_close(14734287, 14734287));
+//     }
 
 //     #[test]
 //     fn clustering() {
@@ -151,32 +233,32 @@ mod tests {
         assert_eq!(2, uf[2].parent);
     }
 
-    #[test]
-    fn union_find_union() {
-        let mut uf = create(3);
-        union(&mut uf, 1, 2);
-        assert_eq!(vec! (Component { parent: 0, rank: 0 },
-                         Component { parent: 2, rank: 1 },
-                         Component { parent: 2, rank: 1 }),
-                         uf);
-        union(&mut uf, 0, 1);
-        assert_eq!(vec! (Component { parent: 2, rank: 1 },
-                         Component { parent: 2, rank: 1 },
-                         Component { parent: 2, rank: 1 }),
-                         uf);
-        union(&mut uf, 0, 2);
-        assert_eq!(vec! (Component { parent: 2, rank: 1 },
-                         Component { parent: 2, rank: 1 },
-                         Component { parent: 2, rank: 1 }),
-                         uf);
-    }
-
-    #[test]
-    fn union_find_find() {
-        let mut uf = create(3);
-        union(&mut uf, 1, 2);
-        assert_eq!(2, find(&mut uf, 1));
-    }
+//     #[test]
+//     fn union_find_union() {
+//         let mut uf = create(3);
+//         union(&mut uf, 1, 2);
+//         assert_eq!(vec! (Component { parent: 0, rank: 0 },
+//                          Component { parent: 2, rank: 1 },
+//                          Component { parent: 2, rank: 1 }),
+//                          uf);
+//         union(&mut uf, 0, 1);
+//         assert_eq!(vec! (Component { parent: 2, rank: 1 },
+//                          Component { parent: 2, rank: 1 },
+//                          Component { parent: 2, rank: 1 }),
+//                          uf);
+//         union(&mut uf, 0, 2);
+//         assert_eq!(vec! (Component { parent: 2, rank: 1 },
+//                          Component { parent: 2, rank: 1 },
+//                          Component { parent: 2, rank: 1 }),
+//                          uf);
+//     }
+// 
+//     #[test]
+//     fn union_find_find() {
+//         let mut uf = create(3);
+//         union(&mut uf, 1, 2);
+//         assert_eq!(2, find(&mut uf, 1));
+//     }
 }
 
 
