@@ -5,28 +5,7 @@ use std::io::BufReader;
 use std::io::prelude::*;
 use std::collections::HashSet;
 
-// fn to_usize(s: String) -> usize {
-//     s.trim().parse::<usize>().expect("Not a usize")
-// }
-
-// fn to_bool(bool_str: &str) -> bool {
-//     if bool_str == "1" { true } else { false }
-// }
-
-pub fn load(filename: &str) -> Vec<i32> {
-    let f = File::open(filename).expect("Can't open file");
-    let mut reader = BufReader::new(f);
-    let mut top_line = String::new();
-    reader.read_line(&mut top_line).unwrap();
-//    let v = to_usize(top_line);
-
-    reader.lines()
-        .map(|line|
-             i32::from_str_radix(&line.unwrap().replace(" ", ""), 2).unwrap())
-        .collect()
-}
-
-pub fn load2(filename: &str) -> (Vec<i32>, Vec<Vec<Vec<usize>>>) {
+pub fn load(filename: &str) -> (Vec<i32>, Vec<Vec<Vec<usize>>>) {
     let f = File::open(filename).expect("Can't open file");
     let mut reader = BufReader::new(f);
     let mut top_line = String::new();
@@ -57,7 +36,7 @@ pub fn is_hamming_close(v1: i32, v2: i32) -> bool {
     true
 }
 
-pub fn cluster2(graph: &Vec<i32>, parts: &Vec<Vec<Vec<usize>>>) -> usize {
+pub fn cluster(graph: &Vec<i32>, parts: &Vec<Vec<Vec<usize>>>) -> usize {
     let mut uf = create(graph.len());
     for g in 0..parts.len() {
         let part = &parts[g];
@@ -68,18 +47,6 @@ pub fn cluster2(graph: &Vec<i32>, parts: &Vec<Vec<Vec<usize>>>) -> usize {
                         union(&mut uf, part[h][j], part[h][k]);
                     }
                 }
-            }
-        }
-    }
-    get_num_clusters(&mut uf)
-}
-
-pub fn cluster(graph: &Vec<i32>) -> usize {
-    let mut uf = create(graph.len());
-    for j in 0..graph.len() {
-        for k in j+1..graph.len() {
-            if is_hamming_close(graph[j], graph[k]) {
-                union(&mut uf, j, k);
             }
         }
     }
@@ -97,16 +64,10 @@ pub fn get_num_clusters(mut union_find: &mut Vec<Component>) -> usize {
 
 fn main() {
     let clustering_start_time = time::precise_time_ns();
-    let (graph, parts) = load2("clustering.txt");
-    println!("Number of clusters: {}", cluster2(&graph, &parts));
+    let (graph, parts) = load("clustering.txt");
+    println!("Number of clusters: {}", cluster(&graph, &parts));
     println!("Time to run clustering: {} ms", // 140s
         (time::precise_time_ns() - clustering_start_time) / 1_000_000);
-
-//     let graph = load("clustering.txt");
-//     let clustering_start_time = time::precise_time_ns();
-//     println!("{}", cluster(&graph));
-//     println!("Time to run clustering: {} ms", // 140s
-//         (time::precise_time_ns() - clustering_start_time) / 1_000_000);
     //6118
 }
 
@@ -151,30 +112,11 @@ pub fn find(mut uf: &mut Vec<Component>, v: usize) -> usize {
 mod tests {
     use super::*;
 
-    fn get_test_graph2() -> Vec<Vec<bool>>{
-        vec!(
-            vec! [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
-            vec! [false, false, false, false, true, true, true, true, false, false, false, false, true, true, true, true, false, false, false, false, true, true, true, true],
-            vec! [true, false, false, false, true, true, true, true, false, false, false, false, true, true, true, true, false, false, false, false, true, true, true, true])
-    }
-
     fn get_test_graph() -> Vec<i32>{
         vec!(11_184_810, 986_895, 9_375_503)
     }
 
     fn get_test_graph_with_arrays() -> (Vec<i32>, Vec<Vec<usize>>, Vec<Vec<usize>>, Vec<Vec<usize>>){
-//         let mut top = vec![vec![0; 0]; 256];
-//         top[170].push(11_184_810);
-//         top[15].push(986_895);
-//         top[143].push(9_375_503);
-//         let mut middle = vec![vec![0; 0]; 256];
-//         middle[170].push(11_184_810);
-//         middle[15].push(986_895);
-//         middle[15].push(9_375_503);
-//         let mut lower = vec![vec![0; 0]; 256];
-//         lower[170].push(11_184_810);
-//         lower[15].push(986_895);
-//         lower[15].push(9_375_503);
         let mut top = vec![vec![0; 0]; 256];
         top[170].push(0);
         top[15].push(1);
