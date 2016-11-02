@@ -72,10 +72,17 @@ fn main() {
 }
 
 #[derive(PartialEq, Eq, Debug)]
-pub struct Component {
+pub struct ComponentOld {
     parent: usize,
     rank: usize,
 }
+
+#[derive(PartialEq, Eq, Debug)]
+pub struct Component<'a> {
+    parent: &Component,
+    rank: usize,
+}
+
 
 pub fn create(size: usize) -> Vec<Component> {
     (0..size)
@@ -116,7 +123,7 @@ mod tests {
         vec!(11_184_810, 986_895, 9_375_503)
     }
 
-    fn get_test_graph_with_arrays() -> (Vec<i32>, Vec<Vec<usize>>, Vec<Vec<usize>>, Vec<Vec<usize>>){
+    fn get_test_graph_with_arrays() -> (Vec<i32>, Vec<Vec<Vec<usize>>>){
         let mut top = vec![vec![0; 0]; 256];
         top[170].push(0);
         top[15].push(1);
@@ -129,27 +136,28 @@ mod tests {
         lower[170].push(0);
         lower[15].push(1);
         lower[15].push(2);
-        (get_test_graph(), top, middle, lower)
+        let parts = vec![top, middle, lower];
+        (get_test_graph(), parts)
     }
 
-    #[test]
-    fn graph_loads() {
-        let graph = load("test.txt");
-        assert_eq!(get_test_graph(), graph);
-    }
+//     #[test]
+//     fn graph_loads() {
+//         let graph = load("test.txt");
+//         assert_eq!(get_test_graph(), graph);
+//    }
 
     #[test]
     fn graph_loads_into_hashmap() {
-        let (graph, top, middle, lower) = load2("test.txt");
-        let (graph_expected, top_expected, middle_expected, lower_expected) = get_test_graph_with_arrays();
+        let (graph, parts) = load("test.txt");
+        let (graph_expected, parts_expected) = get_test_graph_with_arrays();
         assert_eq!(graph_expected, graph);
-        assert_eq!(top_expected[170], top[170]);
-        assert_eq!(top_expected[15], top[15]);
-        assert_eq!(top_expected[143], top[143]);
-        assert_eq!(middle_expected[170], middle[170]);
-        assert_eq!(middle_expected[15], middle[15]);
-        assert_eq!(lower_expected[170], lower[170]);
-        assert_eq!(lower_expected[15], lower[15]);
+        assert_eq!(parts_expected[0][170], parts[0][170]);
+        assert_eq!(parts_expected[0][15], parts[0][15]);
+        assert_eq!(parts_expected[0][143], parts[0][143]);
+        assert_eq!(parts_expected[1][170], parts[1][170]);
+        assert_eq!(parts_expected[1][15], parts[1][15]);
+        assert_eq!(parts_expected[2][170], parts[2][170]);
+        assert_eq!(parts_expected[2][15], parts[2][15]);
     }
 
 //     #[test]
