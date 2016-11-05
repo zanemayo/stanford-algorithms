@@ -50,34 +50,33 @@ fn knapsack2(items: &Vec<Item>, max_weight: usize) -> usize {
     memo[items.len()][max_weight]
 }
 
-fn knapsack_inner(items: &Vec<Item>, ref mut memo: &mut HashMap<(usize, usize), usize>, weight: usize, index: usize) -> usize {
-    if index == 0 { return 0 }
+fn knapsack_inner(items: &Vec<Item>, ref mut memo: &mut HashMap<(usize, i32), usize>, weight: i32, index: usize) -> usize {
+    if (index == 0) { return 0 }
     if memo.get(&(index, weight)).is_none() {
-//         let o1 = knapsack_inner(&items, memo, weight, index - 1);
-//         let o2 = if weight < items[index -1].weight as i32 { -1000000000} else {knapsack_inner(&items, memo, weight - items[index - 1].weight as i32, index - 1) as i32 };
-//         memo.insert((index, weight), std::cmp::max(o1 as i32, o2 + items[index - 1].value as i32) as usize);
-
-        //let Item { weight: itemWeight, value: itemValue} = items[index - 1];
-        let item = &items[index - 1];
         let o1 = knapsack_inner(&items, memo, weight, index - 1);
-        let best = if weight < item.weight {
-              o1 
-            } else {
-                std::cmp::max(
-                    o1,
-                    (knapsack_inner(&items, memo, weight - item.weight, index - 1) + item.value))
-            };
-        memo.insert((index, weight), best);
-        return best;
+        let o2 = if weight < items[index -1].weight as i32 { -1000000000} else {knapsack_inner(&items, memo, weight - items[index - 1].weight as i32, index - 1) as i32 };
+        memo.insert((index, weight), std::cmp::max(o1 as i32, o2 + items[index - 1].value as i32) as usize);
+
+//         let o1 = knapsack_inner(&items, memo, weight, index - 1);
+//         if weight < items[index -1].weight as i32 {
+//             memo.insert((index, weight), o1);
+//             return o1;
+//             } else {
+//                 let best = std::cmp::max( o1,
+//                     (knapsack_inner(&items, memo, weight - items[index - 1].weight as i32, index - 1) + items[index - 1].value));
+//         memo.insert((index, weight), best);
+//         return best;
+// 
+//             };
     }
     *memo.get(&(index, weight)).unwrap()
 }
 
 fn knapsack(items: &Vec<Item>, max_weight: usize) -> usize {
-    let mut memo: HashMap<(usize, usize), usize> = HashMap::new();
+    let mut memo: HashMap<(usize, i32), usize> = HashMap::new();
 
-    knapsack_inner(&items, &mut memo, max_weight, items.len());
-    *memo.get(&(items.len(), max_weight)).unwrap()
+    knapsack_inner(&items, &mut memo, max_weight as i32, items.len());
+    *memo.get(&(items.len(), max_weight as i32)).unwrap()
 }
 
 fn main() {
