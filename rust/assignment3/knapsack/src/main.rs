@@ -50,54 +50,26 @@ fn knapsack2(items: &Vec<Item>, max_weight: usize) -> usize {
     memo[items.len()][max_weight]
 }
 
-fn knapsack_inner(items: &Vec<Item>, ref mut memo: &mut HashMap<(usize, usize), usize>, weight: usize, index: usize) -> usize {
+fn knapsack(items: &Vec<Item>, ref mut memo: &mut HashMap<(usize, usize), usize>, index: usize, weight: usize) -> usize {
     if index == 0 { return 0 }
     if memo.get(&(index, weight)).is_none() {
-//         let o1 = knapsack_inner(&items, memo, weight, index - 1);
-//         let o2 = if weight < items[index -1].weight as i32 { -1000000000} else {knapsack_inner(&items, memo, weight - items[index - 1].weight as i32, index - 1) as i32 };
-//         memo.insert((index, weight), std::cmp::max(o1 as i32, o2 + items[index - 1].value as i32) as usize);
-
-        //let Item { weight: itemWeight, value: itemValue} = items[index - 1];
         let item = &items[index - 1];
-        let o1 = knapsack_inner(&items, memo, weight, index - 1);
         let best = if weight < item.weight {
-              o1 
-            } else {
-                std::cmp::max(
-                    o1,
-                    (knapsack_inner(&items, memo, weight - item.weight, index - 1) + item.value))
-            };
+            knapsack(&items, memo, index - 1, weight)
+        } else {
+            std::cmp::max(knapsack(&items, memo, index - 1, weight), (knapsack(&items, memo, index - 1, weight - item.weight) + item.value))
+        };
         memo.insert((index, weight), best);
         return best;
     }
     *memo.get(&(index, weight)).unwrap()
 }
 
-fn knapsack(items: &Vec<Item>, max_weight: usize) -> usize {
-    let mut memo: HashMap<(usize, usize), usize> = HashMap::new();
-
-    knapsack_inner(&items, &mut memo, max_weight, items.len());
-    *memo.get(&(items.len(), max_weight)).unwrap()
-}
-
 fn main() {
     let knapsack_start_time = time::precise_time_ns();
     let (items, max_weight) = load_knapsack("knapsack_big.txt"); // 4243395
-    let result = knapsack(&items, max_weight);
+    let result = knapsack(&items, &mut HashMap::new(), items.len(), max_weight);
     println!("Time to run knapsack: {} ms", //6343
         (time::precise_time_ns() - knapsack_start_time) / 1_000_000);
     println!("knapsack result: {}", result);
-    //println!("normal {}", knapsack2(&items, max_weight));
-    // assert!(2493893 == knapsack(&items, max_weight))
 }
-
-
-/*
-
-
-   (4,2), (7,3) (10, 2) (3, 1)
-
-
-
-
-*/
